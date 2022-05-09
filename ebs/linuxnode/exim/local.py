@@ -11,7 +11,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 
 ExportSpec = namedtuple(
     'ExportSpec', ["path", "destination", "no_clear", "writer", "contexts"],
-    defaults=['[id]', False, None, 'all']
+    defaults=['[id]', False, None, ['all']]
 )
 
 
@@ -108,8 +108,10 @@ class LocalEximManager(object):
         self.log.info("Executing Local Exports")
         for tag, specs in self._exports.items():
             for spec in specs:
-                if spec.context in (context, 'all'):
+                if context in spec.contexts or 'all' in spec.contexts:
+                    self.actual.signal_exim_action_start(tag, 'export')
                     yield self._execute_export(channel, tag, spec)
+            self.actual.signal_exim_action_done(tag, 'export')
         self.log.info("Executing Local Imports")
         pass
 
@@ -146,9 +148,3 @@ class LocalEximManager(object):
         self.actual.busy_set()
         yield self.execute(channel, context=context)
         self.actual.busy_clear()
-
-    def signal_exim_action_start(self, tag, direction):
-        pass
-
-    def signal_exim_action_done(self, tag, direction):
-        pass

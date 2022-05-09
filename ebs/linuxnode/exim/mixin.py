@@ -12,6 +12,12 @@ class LocalEximMixin(NodeBusyMixin, NodeLoggingMixin):
         super(LocalEximMixin, self).__init__(*args, **kwargs)
         self._exim = None
 
+    def signal_exim_action_start(self, tag, direction):
+        pass
+
+    def signal_exim_action_done(self, tag, direction):
+        pass
+
     @property
     def exim(self):
         if not self._exim:
@@ -27,6 +33,7 @@ class LocalEximMixin(NodeBusyMixin, NodeLoggingMixin):
         _elements = {
             'exim_local_enabled': ElementSpec('exim', 'local_enabled', ItemSpec(bool, fallback=True)),
             'exim_local_mountpoint': ElementSpec('exim', 'local_mountpoint', ItemSpec(fallback='/exim')),
+            'exim_startup_wait': ElementSpec('exim', 'startup_wait', ItemSpec(int, fallback=20)),
         }
         for name, spec in _elements.items():
             self.config.register_element(name, spec)
@@ -36,4 +43,4 @@ class LocalEximMixin(NodeBusyMixin, NodeLoggingMixin):
 
     def start(self):
         super(LocalEximMixin, self).start()
-        self.reactor.callLater(20, self.exim.trigger, 'startup')
+        self.reactor.callLater(self.config.exim_startup_wait, self.exim.trigger, 'startup')

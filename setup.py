@@ -20,6 +20,14 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=_requires,
 
+    package_dir={'ebs.linuxnode.gui.kivy.exim': 'ebs/linuxnode/gui/kivy/exim',
+                 'ebs.linuxnode.exim': 'ebs/linuxnode/exim'},
+
+    package_data={'ebs.linuxnode.gui.kivy.exim': ['images/done.png',
+                                                  'images/download.png',
+                                                  'images/upload.png',
+                                                  'images/usbdrive.png']},
+
     setup_requires=['setuptools_scm'],
     use_scm_version=True,
 

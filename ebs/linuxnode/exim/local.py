@@ -88,7 +88,7 @@ class LocalEximManager(object):
 
     @inlineCallbacks
     def _copy_tree(self, src, dest):
-        yield deferToThread(shutil.copytree, src, dest)
+        yield self.actual._shell_execute(['cp', '-rf', src, dest], lambda _: True)
 
     @inlineCallbacks
     def _execute_export(self, channel, tag, spec):

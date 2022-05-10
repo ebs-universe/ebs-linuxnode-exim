@@ -9,9 +9,16 @@ from twisted.internet.threads import deferToThread
 from twisted.internet.defer import succeed, fail
 from twisted.internet.defer import inlineCallbacks, returnValue
 
+
 ExportSpec = namedtuple(
-    'ExportSpec', ["path", "destination", "no_clear", "writer", "contexts"],
+    'ExportSpec', ["source", "destination", "no_clear", "writer", "contexts"],
     defaults=['[id]', False, None, ['all']]
+)
+
+
+ImportSpec = namedtuple(
+    'ImportSpec', ["destination", "source", "no_clear", "writer", "contexts"],
+    defaults=['[id]', False, None, ['startup']]
 )
 
 
@@ -46,17 +53,25 @@ class LocalEximManager(object):
             self._exports[tag] = []
         if isinstance(spec, str):
             spec = ExportSpec(spec)
-        self.log.debug("Registering '{}' Export from '{}'".format(tag, spec.path))
+        self.log.debug("Registering '{}' Export from '{}'".format(tag, spec.source))
         self._exports[tag].append(spec)
 
-    def register_import(self):
-        pass
+    def register_import(self, tag, spec):
+        tag = tag.upper()
+        if tag in self._imports.keys():
+            self.log.warn("Registered import '{}' with tag '{}' "
+                          "is being overwritten by '{}'"
+                          "".format(self._imports[tag], tag, spec))
+        if isinstance(spec, str):
+            spec = ImportSpec(spec)
+        self.log.debug("Registering '{}' Import from '{}'".format(tag, spec.destination))
+        self._imports[tag] = spec
 
     def install(self):
         self.log.info("Initializing Local Export/Import Infrastructure")
 
     @inlineCallbacks
-    def _clear_directory(self, directory):
+    def clear_directory(self, directory):
         for filename in os.listdir(directory):
             file_path = os.path.join(directory, filename)
             try:
@@ -80,6 +95,7 @@ class LocalEximManager(object):
         target_path = os.path.join(channel, tag)
         if not os.path.exists(target_path):
             return False
+        self.actual.signal_exim_action_start(tag, 'export')
         self.log.info("Executing Export {}".format(spec))
         if spec.destination:
             if spec.destination == '[id]':
@@ -90,7 +106,7 @@ class LocalEximManager(object):
             target_path = os.path.join(target_path, destination)
         if not os.path.exists(target_path):
             os.makedirs(target_path, exist_ok=True)
-        path_part = os.path.basename(spec.path)
+        path_part = os.path.basename(spec.source)
         target_path = os.path.join(target_path, path_part)
         if not spec.no_clear:
             if os.path.exists(target_path):
@@ -101,7 +117,42 @@ class LocalEximManager(object):
         if spec.writer:
             yield spec.writer(target_path)
         else:
-            yield self._copy_tree(spec.path, target_path)
+            yield self._copy_tree(spec.source, target_path)
+
+    @inlineCallbacks
+    def _execute_import(self, channel, tag, spec):
+        source_path = os.path.join(channel, tag)
+        if not os.path.exists(source_path):
+            return False
+        if spec.source:
+            if spec.source == '[id]':
+                source = self.actual.id
+            elif spec.source == '[id]?':
+                lsource = self.actual.id
+                lsource = lsource.upper()
+                if os.path.exists(os.path.join(source_path, lsource)):
+                    source = self.actual.id
+                else:
+                    source = None
+            else:
+                source = spec.source
+            if source:
+                source = source.upper()
+                source_path = os.path.join(source_path, source)
+        if not os.path.exists(source_path):
+            return False
+        self.actual.signal_exim_action_start(tag, 'import')
+        self.log.info("Executing Import {}".format(spec))
+        if spec.writer:
+            yield spec.writer(source_path)
+        else:
+            if not spec.no_clear:
+                if os.path.exists(spec.destination):
+                    if os.path.isdir(spec.destination):
+                        yield self._remove_directory(spec.destination)
+                    else:
+                        os.unlink(spec.destination)
+            yield self._copy_tree(source_path, spec.destination)
 
     @inlineCallbacks
     def execute(self, channel, context=None):
@@ -109,11 +160,13 @@ class LocalEximManager(object):
         for tag, specs in self._exports.items():
             for spec in specs:
                 if context in spec.contexts or 'all' in spec.contexts:
-                    self.actual.signal_exim_action_start(tag, 'export')
                     yield self._execute_export(channel, tag, spec)
             self.actual.signal_exim_action_done(tag, 'export')
         self.log.info("Executing Local Imports")
-        pass
+        for tag, spec in self._imports.items():
+            if context in spec.contexts or 'all' in spec.contexts:
+                yield self._execute_import(channel, tag, spec)
+            self.actual.signal_exim_action_done(tag, 'import')
 
     def _authenticate_channel(self, path):
         if not os.path.exists(os.path.join(path, '.ebs')):
@@ -148,3 +201,4 @@ class LocalEximManager(object):
         self.actual.busy_set()
         yield self.execute(channel, context=context)
         self.actual.busy_clear()
+        self.log.info("Finished Export/Import")

@@ -2,6 +2,8 @@
 
 import os
 
+from twisted.internet.defer import inlineCallbacks
+
 from kivy.clock import Clock
 from kivy.properties import DictProperty
 from kivy.properties import BooleanProperty
@@ -69,13 +71,14 @@ class EximIndicator(ColorBoxLayout):
         kwargs.setdefault('padding', [0, 0, 0, 0])
         kwargs.setdefault('size_hint', (None, None))
         kwargs.setdefault('height', 50)
-        kwargs.setdefault('spacing', 0)
+        kwargs.setdefault('spacing', 10)
         super(EximIndicator, self).__init__(**kwargs)
         self._min_timer = None
         self.bind(children=self._recalculate_size)
         self._min_elapsed = False
         self._create_base_children()
-        self._start_min_timer(20)
+        self._duration = 30
+        self._start_min_timer(self._duration)
 
     @property
     def images_dir(self):
@@ -83,7 +86,7 @@ class EximIndicator(ColorBoxLayout):
         return os.path.join(_root, 'images')
 
     def _recalculate_size(self, *_):
-        self.width = sum([x.width for x in self.children]) + 10
+        self.width = sum([x.width for x in self.children]) + (10 * len(self.children))
 
     def _create_base_children(self):
         self._icon = StandardImage(
@@ -99,7 +102,9 @@ class EximIndicator(ColorBoxLayout):
                 return
         self.finished = True
 
-    def _start_min_timer(self, period=5):
+    def _start_min_timer(self, period=None):
+        if not period:
+            period = self._duration
         self._min_timer = Clock.schedule_once(lambda *_: self._expire_lock(), period)
 
     def add_action(self, key):
@@ -111,3 +116,17 @@ class EximIndicator(ColorBoxLayout):
         self.actions[key].finished = True
         self._min_timer.cancel()
         self._start_min_timer()
+
+    _context_durations = {
+        'default': 10,
+        'startup': 60,
+        'hotplug': 8,
+    }
+
+    @inlineCallbacks
+    def trigger(self, context):
+        if context in self._context_durations.keys():
+            self._duration = self._context_durations[context]
+        else:
+            self._duration = self._context_durations['default']
+        yield super(EximIndicator, self).trigger(context)

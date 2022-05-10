@@ -17,7 +17,8 @@ class EximGuiMixin(BaseIoTNodeGui, LocalEximMixin):
         self.exim_indicator.add_action((tag, direction))
 
     def signal_exim_action_done(self, tag, direction):
-        self.exim_indicator.finish_action((tag, direction))
+        if (tag, direction) in self.exim_indicator.actions.keys():
+            self.exim_indicator.finish_action((tag, direction))
 
     @property
     def exim_indicator(self):

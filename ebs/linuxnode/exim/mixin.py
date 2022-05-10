@@ -26,7 +26,6 @@ class LocalEximMixin(NodeBusyMixin, NodeLoggingMixin):
 
     def exim_install(self):
         super(LocalEximMixin, self).exim_install()
-        pass
 
     def install(self):
         super(LocalEximMixin, self).install()

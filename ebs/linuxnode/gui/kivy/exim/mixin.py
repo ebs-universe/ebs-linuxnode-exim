@@ -14,11 +14,13 @@ class EximGuiMixin(BaseIoTNodeGui, LocalEximMixin):
     def signal_exim_action_start(self, tag, direction):
         if not self._exim_indicator:
             self._exim_indicator_show()
-        self.exim_indicator.add_action((tag, direction))
+        self._exim_indicator.add_action((tag, direction))
 
     def signal_exim_action_done(self, tag, direction):
-        if (tag, direction) in self.exim_indicator.actions.keys():
-            self.exim_indicator.finish_action((tag, direction))
+        if not self._exim_indicator:
+            return
+        if (tag, direction) in self._exim_indicator.actions.keys():
+            self._exim_indicator.finish_action((tag, direction))
 
     @property
     def exim_indicator(self):
@@ -29,12 +31,12 @@ class EximGuiMixin(BaseIoTNodeGui, LocalEximMixin):
     def _exim_indicator_show(self):
         if not self.exim_indicator.parent:
             print("Trying to Show EXIM indicator")
-            self.exim_indicator.bind(finished=lambda *_: self._exim_indicator_hide())
-            self.gui_notification_row.add_widget(self.exim_indicator)
+            self._exim_indicator.bind(finished=lambda *_: self._exim_indicator_hide())
+            self.gui_notification_row.add_widget(self._exim_indicator)
             self.gui_notification_update()
 
     def _exim_indicator_hide(self):
-        if self.exim_indicator.parent:
-            self.exim_indicator.parent.remove_widget(self.exim_indicator)
+        if self._exim_indicator.parent:
+            self._exim_indicator.parent.remove_widget(self._exim_indicator)
             self.gui_notification_update()
         self._exim_indicator = None

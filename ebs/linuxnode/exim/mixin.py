@@ -2,12 +2,13 @@
 
 from ebs.linuxnode.core.log import NodeLoggingMixin
 from ebs.linuxnode.core.busy import NodeBusyMixin
+from ebs.linuxnode.core.shell import BaseShellMixin
 from ebs.linuxnode.core.config import ElementSpec, ItemSpec
 
 from .local import LocalEximManager
 
 
-class LocalEximMixin(NodeBusyMixin, NodeLoggingMixin):
+class LocalEximMixin(BaseShellMixin, NodeBusyMixin, NodeLoggingMixin):
     def __init__(self, *args, **kwargs):
         super(LocalEximMixin, self).__init__(*args, **kwargs)
         self._exim = None

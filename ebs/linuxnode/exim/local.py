@@ -11,8 +11,8 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 
 
 ExportSpec = namedtuple(
-    'ExportSpec', ["source", "destination", "no_clear", "writer", "contexts"],
-    defaults=['[id]', False, None, ['all']]
+    'ExportSpec', ["source", "destination", "no_clear", "writer", "contexts", "reclaim_space"],
+    defaults=['[id]', False, None, ['all'], False]
 )
 
 

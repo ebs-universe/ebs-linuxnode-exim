@@ -39,8 +39,8 @@ class LocalEximMixin(BaseShellMixin, NodeBusyMixin, NodeLoggingMixin):
             self.config.register_element(name, spec)
 
         self.exim.install()
-        self.exim_install()
 
     def start(self):
         super(LocalEximMixin, self).start()
+        self.exim_install()
         self.reactor.callLater(self.config.exim_startup_wait, self.exim.trigger, 'startup')

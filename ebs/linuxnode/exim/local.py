@@ -155,6 +155,9 @@ class LocalEximManager(object):
                     else:
                         os.unlink(spec.destination)
             yield self._copy_tree(source_path, spec.destination)
+        if spec.reclaim_space:
+            yield self._remove_directory(source_path)
+        return True
 
     @inlineCallbacks
     def execute(self, channel, context=None):

@@ -11,13 +11,13 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 
 
 ExportSpec = namedtuple(
-    'ExportSpec', ["source", "destination", "no_clear", "writer", "contexts", "reclaim_space"],
+    'ExportSpec', ["source", "destination", "no_clear", "writer", "contexts", "delete_source"],
     defaults=['[id]', False, None, ['all'], False]
 )
 
 
 ImportSpec = namedtuple(
-    'ImportSpec', ["destination", "source", "no_clear", "writer", "contexts"],
+    'ImportSpec', ["destination", "source", "no_clear", "writer", "contexts", "delete_source"],
     defaults=['[id]', False, None, ['startup']]
 )
 
@@ -120,6 +120,10 @@ class LocalEximManager(object):
             yield spec.writer(target_path)
         else:
             yield self._copy_tree(spec.source, target_path)
+        if spec.delete_source:
+            yield self._remove_directory(spec.source)
+        return True
+
 
     @inlineCallbacks
     def _execute_import(self, channel, tag, spec):
@@ -155,7 +159,7 @@ class LocalEximManager(object):
                     else:
                         os.unlink(spec.destination)
             yield self._copy_tree(source_path, spec.destination)
-        if spec.reclaim_space:
+        if spec.delete_source:
             yield self._remove_directory(source_path)
         return True
 

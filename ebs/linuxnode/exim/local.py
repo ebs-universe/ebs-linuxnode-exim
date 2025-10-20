@@ -95,6 +95,8 @@ class LocalEximManager(object):
         target_path = os.path.join(channel, tag)
         if not os.path.exists(target_path):
             return False
+        if not os.path.exists(spec.source):
+            return False
         self.actual.signal_exim_action_start(tag, 'export')
         self.log.info("Executing Export {}".format(spec))
         if spec.destination:

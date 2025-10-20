@@ -18,7 +18,7 @@ ExportSpec = namedtuple(
 
 ImportSpec = namedtuple(
     'ImportSpec', ["destination", "source", "no_clear", "writer", "contexts", "delete_source"],
-    defaults=['[id]', False, None, ['startup']]
+    defaults=['[id]', False, None, ['startup'], False]
 )
 
 
